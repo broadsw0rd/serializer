@@ -1,0 +1,50 @@
+{
+  "name": "serializer",
+  "version": "0.0.0",
+  "description": "Binary serializer",
+  "keywords": [
+    "serialization"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/broadsw0rd/serializer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/broadsw0rd/serializer"
+  },
+  "bugs": {
+    "url": "https://github.com/broadsw0rd/serializer/issues",
+    "email": "broadsw.rd@yandex.ru"
+  },
+  "author": {
+    "name": "Vladimir Bykov",
+    "email": "broadsw.rd@yandex.ru",
+    "url": "https://github.com/broadsw0rd"
+  },
+  "files": [
+    "dist"
+  ],
+  "umd": "dist/serializer.umd.js",
+  "main": "dist/serializer.cjs.js",
+  "module": "dist/serializer.js",
+  "dependencies": {},
+  "devDependencies": {
+    "coveralls": "^3.0.0",
+    "nyc": "^11.4.1",
+    "rollup": "0.49.2",
+    "rollup-plugin-buble": "0.15.0",
+    "rollup-plugin-commonjs": "8.2.6",
+    "rollup-plugin-node-resolve": "3.0.0",
+    "snazzy": "7.0.0",
+    "standard": "10.0.3",
+    "tap-diff": "0.1.1",
+    "tape": "4.8.0",
+    "uglify-js": "3.0.28"
+  },
+  "scripts": {
+    "check": "standard src/*.js test/*.js | snazzy",
+    "build": "rollup -c",
+    "test": "nyc --reporter=html --reporter=lcov --reporter=text tape test/index.test.js",
+    "min": "uglifyjs dist/serializer.umd.js -c -m > dist/serializer.min.js",
+    "coveralls": "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
+  }
+}
