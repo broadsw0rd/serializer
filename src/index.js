@@ -47,7 +47,21 @@ class Serializer {
   }
   
   deserialize (buffer) {
+    var unit = this.unit
+    var size = unit.size
+    var offset = 0
+    var length = buffer.byteLength / size
+    var result = Array(length)
     
+    this.buffer = buffer
+    this.views = this.createViews(this.buffer)
+    this.setViews()
+    
+    for (var i = 0; i < length; i++) {
+      result[i] = unit.deserialize(offset)
+      offset += size
+    }
+    return result
   }
 }
 
