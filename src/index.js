@@ -3,16 +3,16 @@ import Bool from './serializables/bool.js'
 import Float from './serializables/float.js'
 import Int from './serializables/int.js'
 import Uint from './serializables/uint.js'
+import Text from './serializables/text.js'
+import List from './serializables/list.js'
+import Struct from './serializables/struct.js'
 
 class Serializer {
   constructor (unit) {
     this.unit = unit
     this.units = unit.expand()
-    this.buffer = new ArrayBuffer(0xff << 10)
-    this.views = this.createViews(this.buffer)
-    this.setViews()
   }
-  
+
   createViews (buffer) {
     var views = new Map([
       [Uint8Array, new Uint8Array(buffer)],
@@ -23,40 +23,46 @@ class Serializer {
       [Int32Array, new Int32Array(buffer)],
       [Float32Array, new Float32Array(buffer)]
     ])
-    
-    return views
+
+    this.views = views
   }
-  
+
   setViews () {
     for (var i = 0; i < this.units.length; i++) {
       var unit = this.units[i]
       unit.view = this.views.get(unit.type)
     }
   }
-  
+
   serialize (list) {
     var unit = this.unit
     var size = unit.size
     var offset = 0
+    var length = list.length
+
+    this.buffer = new ArrayBuffer(length * size)
+    this.createViews(this.buffer)
+    this.setViews()
+
     for (var i = 0; i < list.length; i++) {
       unit.serialize(offset, list[i])
       offset += size
     }
-    
+
     return this.buffer
   }
-  
+
   deserialize (buffer) {
     var unit = this.unit
     var size = unit.size
     var offset = 0
     var length = buffer.byteLength / size
     var result = Array(length)
-    
+
     this.buffer = buffer
-    this.views = this.createViews(this.buffer)
+    this.createViews(this.buffer)
     this.setViews()
-    
+
     for (var i = 0; i < length; i++) {
       result[i] = unit.deserialize(offset)
       offset += size
@@ -70,5 +76,8 @@ Serializer.Bool = Bool
 Serializer.Float = Float
 Serializer.Int = Int
 Serializer.Uint = Uint
+Serializer.Text = Text
+Serializer.List = List
+Serializer.Struct = Struct
 
 export default Serializer

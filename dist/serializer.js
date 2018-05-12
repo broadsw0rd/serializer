@@ -6,7 +6,7 @@ var Serializable = function Serializable (view, offset) {
   this.offset = offset;
 };
 
-var prototypeAccessors = { length: {},bytes: {},size: {},type: {} };
+var prototypeAccessors = { length: { configurable: true },bytes: { configurable: true },size: { configurable: true },type: { configurable: true } };
 
 Serializable.prototype.encode = function encode (value) {
   return value
@@ -119,12 +119,260 @@ var Uint = (function (Serializable$$1) {
   return Uint;
 }(Serializable));
 
-var Serializer = function Serializer () {};
+var Text = (function (Serializable$$1) {
+  function Text (length, view) {
+    if ( view === void 0 ) view = new Uint16Array();
+
+    Serializable$$1.call(this, view);
+    this._length = length;
+  }
+
+  if ( Serializable$$1 ) Text.__proto__ = Serializable$$1;
+  Text.prototype = Object.create( Serializable$$1 && Serializable$$1.prototype );
+  Text.prototype.constructor = Text;
+
+  var prototypeAccessors = { length: { configurable: true } };
+
+  prototypeAccessors.length.get = function () {
+    return this._length
+  };
+
+  Text.prototype.serialize = function serialize (offset, value) {
+    var this$1 = this;
+
+    var size = this.size;
+    for (var i = 0; i < this.length; i++) {
+      if (i < value.length) {
+        Serializable$$1.prototype.serialize.call(this$1, offset, value.charCodeAt(i));
+      } else {
+        break
+      }
+      offset += size;
+    }
+  };
+
+  Text.prototype.deserialize = function deserialize (offset) {
+    var this$1 = this;
+
+    var chars = [];
+    var size = this.size;
+    for (var i = 0; i < this.length; i++) {
+      var value = Serializable$$1.prototype.deserialize.call(this$1, offset);
+      if (value !== 0) {
+        chars.push(value);
+      } else {
+        break
+      }
+      offset += size;
+    }
+    return String.fromCharCode.apply(String, chars)
+  };
+
+  Object.defineProperties( Text.prototype, prototypeAccessors );
+
+  return Text;
+}(Serializable));
+
+var List = (function (Serializable$$1) {
+  function List (unit, length) {
+    Serializable$$1.call(this, unit.view);
+    this.unit = unit;
+    this._length = length;
+  }
+
+  if ( Serializable$$1 ) List.__proto__ = Serializable$$1;
+  List.prototype = Object.create( Serializable$$1 && Serializable$$1.prototype );
+  List.prototype.constructor = List;
+
+  var prototypeAccessors = { length: { configurable: true } };
+
+  List.prototype.expand = function expand () {
+    return this.unit.expand()
+  };
+
+  prototypeAccessors.length.get = function () {
+    return this._length
+  };
+
+  List.prototype.serialize = function serialize (offset, value) {
+    var unit = this.unit;
+    var size = unit.size;
+    for (var i = 0; i < this.length; i++) {
+      unit.serialize(offset, value[i]);
+      offset += size;
+    }
+  };
+
+  List.prototype.deserialize = function deserialize (view, offset) {
+    var unit = this.unit;
+    var size = unit.size;
+    var result = Array(this.length);
+    for (var i = 0; i < this.length; i++) {
+      result[i] = unit.deserialize(offset);
+      offset += size;
+    }
+    return result
+  };
+
+  Object.defineProperties( List.prototype, prototypeAccessors );
+
+  return List;
+}(Serializable));
+
+function comparator (a, b) {
+  return (a.bytes < b.bytes) - (b.bytes - a.bytes)
+}
+
+var Struct = (function (Serializable$$1) {
+  function Struct (scheme) {
+    Serializable$$1.call(this);
+    this.scheme = scheme;
+    this.keys = Object.keys(scheme);
+    this.units = this.expand();
+    this._size = this.cacheSize();
+    this.setOffsets();
+  }
+
+  if ( Serializable$$1 ) Struct.__proto__ = Serializable$$1;
+  Struct.prototype = Object.create( Serializable$$1 && Serializable$$1.prototype );
+  Struct.prototype.constructor = Struct;
+
+  var prototypeAccessors = { size: { configurable: true } };
+
+  Struct.prototype.expand = function expand () {
+    var this$1 = this;
+
+    var result = [];
+    for (var i = 0; i < this.keys.length; i++) {
+      var unit = this$1.scheme[this$1.keys[i]];
+      result = result.concat(unit.expand());
+    }
+    return result.sort(comparator)
+  };
+
+  Struct.prototype.cacheSize = function cacheSize () {
+    var this$1 = this;
+
+    var size = 0;
+    for (var i = 0; i < this.keys.length; i++) {
+      size += this$1.scheme[this$1.keys[i]].size;
+    }
+    return size
+  };
+
+  Struct.prototype.setOffsets = function setOffsets () {
+    var this$1 = this;
+
+    var offset = 0;
+    for (var i = 0; i < this.units.length; i++) {
+      var unit = this$1.units[i];
+      unit.offset = offset;
+      offset += unit.size;
+    }
+  };
+
+  prototypeAccessors.size.get = function () {
+    return this._size
+  };
+
+  Struct.prototype.serialize = function serialize (offset, value) {
+    var this$1 = this;
+
+    for (var i = 0; i < this.keys.length; i++) {
+      var key = this$1.keys[i];
+      var unit = this$1.scheme[key];
+      unit.serialize(offset, value[key]);
+    }
+  };
+
+  Struct.prototype.deserialize = function deserialize (offset) {
+    var this$1 = this;
+
+    var result = {};
+    for (var i = 0; i < this.keys.length; i++) {
+      var key = this$1.keys[i];
+      var unit = this$1.schema[key];
+      result[key] = unit.deserialize(offset);
+    }
+    return result
+  };
+
+  Object.defineProperties( Struct.prototype, prototypeAccessors );
+
+  return Struct;
+}(Serializable));
+
+var Serializer = function Serializer (unit) {
+  this.unit = unit;
+  this.units = unit.expand();
+};
+
+Serializer.prototype.createViews = function createViews (buffer) {
+  var views = new Map([
+    [Uint8Array, new Uint8Array(buffer)],
+    [Uint16Array, new Uint16Array(buffer)],
+    [Uint32Array, new Uint32Array(buffer)],
+    [Int8Array, new Int8Array(buffer)],
+    [Int16Array, new Int16Array(buffer)],
+    [Int32Array, new Int32Array(buffer)],
+    [Float32Array, new Float32Array(buffer)]
+  ]);
+
+  this.views = views;
+};
+
+Serializer.prototype.setViews = function setViews () {
+    var this$1 = this;
+
+  for (var i = 0; i < this.units.length; i++) {
+    var unit = this$1.units[i];
+    unit.view = this$1.views.get(unit.type);
+  }
+};
+
+Serializer.prototype.serialize = function serialize (list) {
+  var unit = this.unit;
+  var size = unit.size;
+  var offset = 0;
+  var length = list.length;
+
+  this.buffer = new ArrayBuffer(length * size);
+  this.createViews(this.buffer);
+  this.setViews();
+
+  for (var i = 0; i < list.length; i++) {
+    unit.serialize(offset, list[i]);
+    offset += size;
+  }
+
+  return this.buffer
+};
+
+Serializer.prototype.deserialize = function deserialize (buffer) {
+  var unit = this.unit;
+  var size = unit.size;
+  var offset = 0;
+  var length = buffer.byteLength / size;
+  var result = Array(length);
+
+  this.buffer = buffer;
+  this.createViews(this.buffer);
+  this.setViews();
+
+  for (var i = 0; i < length; i++) {
+    result[i] = unit.deserialize(offset);
+    offset += size;
+  }
+  return result
+};
 
 Serializer.Serializable = Serializable;
 Serializer.Bool = Bool;
 Serializer.Float = Float;
 Serializer.Int = Int;
 Serializer.Uint = Uint;
+Serializer.Text = Text;
+Serializer.List = List;
+Serializer.Struct = Struct;
 
 export default Serializer;

@@ -1,15 +1,15 @@
 import Serializable from './serializable.js'
 
 class Text extends Serializable {
-  constructor(length, view = new Uint16Array) {
+  constructor (length, view = new Uint16Array()) {
     super(view)
     this._length = length
   }
-  
-  get length() {
+
+  get length () {
     return this._length
   }
-  
+
   serialize (offset, value) {
     var size = this.size
     for (var i = 0; i < this.length; i++) {
@@ -21,7 +21,7 @@ class Text extends Serializable {
       offset += size
     }
   }
-  
+
   deserialize (offset) {
     var chars = []
     var size = this.size

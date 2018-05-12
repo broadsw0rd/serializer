@@ -13,7 +13,7 @@ class Struct extends Serializable {
     this._size = this.cacheSize()
     this.setOffsets()
   }
-  
+
   expand () {
     var result = []
     for (var i = 0; i < this.keys.length; i++) {
@@ -22,7 +22,7 @@ class Struct extends Serializable {
     }
     return result.sort(comparator)
   }
-  
+
   cacheSize () {
     var size = 0
     for (var i = 0; i < this.keys.length; i++) {
@@ -30,7 +30,7 @@ class Struct extends Serializable {
     }
     return size
   }
-  
+
   setOffsets () {
     var offset = 0
     for (var i = 0; i < this.units.length; i++) {
@@ -39,11 +39,11 @@ class Struct extends Serializable {
       offset += unit.size
     }
   }
-  
+
   get size () {
     return this._size
   }
-  
+
   serialize (offset, value) {
     for (var i = 0; i < this.keys.length; i++) {
       var key = this.keys[i]
@@ -51,7 +51,7 @@ class Struct extends Serializable {
       unit.serialize(offset, value[key])
     }
   }
-  
+
   deserialize (offset) {
     var result = {}
     for (var i = 0; i < this.keys.length; i++) {

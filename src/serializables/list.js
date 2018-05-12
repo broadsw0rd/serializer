@@ -1,20 +1,20 @@
 import Serializable from './serializable.js'
 
 class List extends Serializable {
-  constructor(unit, length) {
+  constructor (unit, length) {
     super(unit.view)
     this.unit = unit
     this._length = length
   }
-  
+
   expand () {
     return this.unit.expand()
   }
-  
+
   get length () {
     return this._length
   }
-  
+
   serialize (offset, value) {
     var unit = this.unit
     var size = unit.size
@@ -23,7 +23,7 @@ class List extends Serializable {
       offset += size
     }
   }
-  
+
   deserialize (view, offset) {
     var unit = this.unit
     var size = unit.size
