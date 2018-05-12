@@ -1,7 +1,5 @@
 import pkg from './package.json'
 import buble from 'rollup-plugin-buble'
-import nodeResolve from 'rollup-plugin-node-resolve'
-import commonjs from 'rollup-plugin-commonjs'
 
 export default {
   input: 'src/index.js',
@@ -11,8 +9,6 @@ export default {
     { file: pkg.module, format: 'es' }
   ],
   plugins: [
-    buble(),
-    nodeResolve(),
-    commonjs()
+    buble()
   ]
 }
